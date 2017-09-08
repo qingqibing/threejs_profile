@@ -1,9 +1,12 @@
+let data;
+
 let scene,
     renderer,
     camera,
     light;
 
-let pic;
+let pic,
+    linkLeft;
 
 let width,
     height;
@@ -13,42 +16,47 @@ let raycaster,
     control;
 
 const init = () => {
-    window.addEventListener('resize', onResize, false);
+    loadData((res) => {
+        data = JSON.parse(res);
+        console.log(data);
+        window.addEventListener('resize', onResize, false);
 
-    width = window.innerWidth;
-    height = window.innerHeight - 20;
+        width = window.innerWidth;
+        height = window.innerHeight - 20;
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height);
-    document.getElementById('main').appendChild(renderer.domElement);
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(width, height);
+        document.getElementById('main').appendChild(renderer.domElement);
 
-    scene = new THREE.Scene();
+        scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
-    camera.position.set(0, 0, 2);
-    scene.add(camera);
+        camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+        camera.position.set(0, 0, 2);
+        scene.add(camera);
 
-    light = new THREE.DirectionalLight(0xffffff);
-    light.position.set(0, 10, 0);
-    // light.castShadow = true;
-    scene.add(light);
+        light = new THREE.DirectionalLight(0xffffff);
+        light.position.set(0, 10, 0);
+        // light.castShadow = true;
+        scene.add(light);
 
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
+        // for click target ლ(ﾟдﾟლ)
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
 
-    control = new THREE.OrbitControls(camera, renderer.domElement);
+        control = new THREE.OrbitControls(camera, renderer.domElement);
 
-    renderContent();
-    renderSkybox();
-    animate();
+        renderContent();
+        renderSkybox();
+        animate();
 
-    window.addEventListener('click', onClick, false);
+        window.addEventListener('click', onClick, false);
+    });
 };
 
 const renderContent = () => {
     const picGeom = new THREE.PlaneGeometry(1, 1);
     const picMat = new THREE.MeshBasicMaterial({
-        map: new THREE.TextureLoader().load('./assets/img/david.jpg')
+        map: new THREE.TextureLoader().load('./assets/img/' + data.userImage)
     });
 
     pic = new THREE.Mesh(picGeom, picMat);
@@ -64,9 +72,11 @@ const renderContent = () => {
     plane.position.y = -1;
     scene.add(plane);
 
+
+    // create profile name (╯-_-)╯
     const fontLoader = new THREE.FontLoader();
     fontLoader.load('./assets/fonts/helvetiker_bold.typeface.json', (font) => {
-        const fontGeom = new THREE.TextGeometry('David', {
+        const fontGeom = new THREE.TextGeometry(data.name, {
             font,
             size: .8,
             height: .2,
@@ -87,12 +97,26 @@ const renderContent = () => {
         fontGeom.textWidth = 1;
     });
 
+
+    // load David model ╮(╯◇╰)╭
     const objLoader = new THREE.OBJLoader();
     objLoader.load('./assets/obj/davidprint.obj', (mesh) => {
         mesh.scale.set(.02, .02, .02);
         mesh.position.set(-2.5, -1, -4);
-       scene.add(mesh);
+        scene.add(mesh);
     });
+
+    linkLeft = new THREE.Mesh(
+        new THREE.CircleGeometry(.5, 32),
+        new THREE.MeshBasicMaterial({
+            map: new THREE.TextureLoader().load('./assets/img/' + data.linkLeft.image)
+        })
+    );
+    linkLeft.position.set(-4, 0, -4);
+    linkLeft.rotation.y = Math.PI / 6;
+    linkLeft.name = 'linkLeft';
+    scene.add(linkLeft);
+
 };
 
 const renderSkybox = () => {
@@ -147,17 +171,31 @@ const onClick = (e) => {
     e.preventDefault();
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    console.log(mouse);
     raycaster.setFromCamera(mouse, camera);
-    let intersects = raycaster.intersectObjects([pic]);
+    let intersects = raycaster.intersectObjects([pic, linkLeft]);
     if (intersects.length > 0) {
-        console.log(intersects[0]);
-        intersects[0].object.position.z -= 1;
+        console.log(intersects[0].object);
+        if (intersects[0].object.name === 'linkLeft') {
+            window.open(data.linkLeft.url);
+        }
     }
 };
 
 const render = () => {
     renderer.render(scene, camera)
+};
+
+
+const loadData = (callback) => {
+    const xhr = new XMLHttpRequest();
+    xhr.overrideMimeType('application/json');
+    xhr.open('GET', 'config.json', true);
+    xhr.onreadystatechange = () => {
+        if (xhr.readyState == 4 && xhr.status == '200') {
+            callback(xhr.responseText);
+        }
+    };
+    xhr.send();
 };
 
 

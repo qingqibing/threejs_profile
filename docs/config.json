@@ -1,0 +1,12 @@
+{
+  "name": "David",
+  "userImage": "david.jpg",
+  "linkLeft": {
+    "image": "linkLeft.png",
+    "url": "https://github.com/paulhuang1102"
+  },
+  "linkRight": {
+    "image": "linkRight.jpg",
+    "url": "https://google.com"
+  }
+}
