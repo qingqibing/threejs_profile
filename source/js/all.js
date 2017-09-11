@@ -6,7 +6,8 @@ let scene,
     light;
 
 let pic,
-    linkLeft;
+    linkLeft,
+    table;
 
 let width,
     height;
@@ -14,6 +15,9 @@ let width,
 let raycaster,
     mouse,
     control;
+
+let objLoader,
+    mtlLoader;
 
 const init = () => {
     loadData((res) => {
@@ -54,13 +58,16 @@ const init = () => {
 };
 
 const renderContent = () => {
+    objLoader = new THREE.OBJLoader();
+    mtlLoader = new THREE.MTLLoader();
+
     const picGeom = new THREE.PlaneGeometry(1, 1);
     const picMat = new THREE.MeshBasicMaterial({
         map: new THREE.TextureLoader().load('./assets/img/' + data.userImage)
     });
 
     pic = new THREE.Mesh(picGeom, picMat);
-    pic.position.set(0, 0, -4);
+    pic.position.set(0, .17, -4);
     pic.name = 'david';
     scene.add(pic);
 
@@ -99,12 +106,17 @@ const renderContent = () => {
 
 
     // load David model ╮(╯◇╰)╭
-    const objLoader = new THREE.OBJLoader();
     objLoader.load('./assets/obj/davidprint.obj', (mesh) => {
         mesh.scale.set(.02, .02, .02);
         mesh.position.set(-2.5, -1, -4);
         scene.add(mesh);
     });
+
+
+    const dLight = new THREE.DirectionalLight(0xffffff, 1, 100);
+    dLight.position.set(.5, -1, 0);
+    scene.add(dLight);
+
 
     linkLeft = new THREE.Mesh(
         new THREE.CircleGeometry(.5, 32),
@@ -116,6 +128,44 @@ const renderContent = () => {
     linkLeft.rotation.y = Math.PI / 6;
     linkLeft.name = 'linkLeft';
     scene.add(linkLeft);
+
+
+    const shaderMat = new THREE.ShaderMaterial({
+        uniforms: {
+            "c": { type: "f", value: 1.0 },
+            "p": { type: "f", value: 1.4 },
+            glowColor: { type: "c", value: new THREE.Color(0xffff00) },
+            viewVector: { type: "v3", value: camera.position }
+        },
+        vertexShader: document.getElementById('vertexShader').textContent,
+        fragmentShader: document.getElementById('fragmentShader').textContent,
+        side: THREE.FrontSide,
+        blending: THREE.AdditiveBlending,
+        transparent: true
+    });
+
+    const linkLeftGlow = new THREE.Mesh(new THREE.SphereGeometry(.7, 32, 16), shaderMat);
+    linkLeftGlow.position.x = linkLeft.position.x;
+    linkLeftGlow.position.y = linkLeft.position.y;
+    linkLeftGlow.position.z = linkLeft.position.z;
+    scene.add(linkLeftGlow);
+
+    const picGlow = new THREE.Mesh(new THREE.SphereGeometry(.8, 32, 16), shaderMat);
+    picGlow.position.x = pic.position.x;
+    picGlow.position.y = pic.position.y;
+    picGlow.position.z = pic.position.z;
+    scene.add(picGlow);
+
+    mtlLoader.load('./assets/obj/wooden-coffe-table.mtl', mat => {
+        mat.preload();
+        objLoader.setMaterials(mat);
+        objLoader.load('./assets/obj/wooden-coffe-table.obj', mesh => {
+            mesh.scale.set(.5, .5, .5);
+            mesh.position.set(0, -1, -4)
+            scene.add(mesh);
+        })
+    })
+
 
 };
 
